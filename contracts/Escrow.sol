@@ -18,8 +18,8 @@ contract Escrow {
     //TODO: implement the escrow contract
     // 1. state machine
     enum EscrowState {
-        AWAITING_DELIVERY,
         AWAITING_PAYMENT,
+        AWAITING_DELIVERY,
         COMPLETE,
         REFUNDED
     }
@@ -55,28 +55,28 @@ contract Escrow {
 
     //function release
     function release() external {
-        require(msg.sender == buyer, "Only buyer can release");
+        require(msg.sender == seller, "Only Seller can release");
         require(state == EscrowState.AWAITING_DELIVERY, "Invalid State");
-        require(amount > 0, "No funds to release");
-
-        uint256 payment = amount;
-        amount = 0;
         state = EscrowState.COMPLETE;
 
-        payable(seller).transfer(payment);
+        uint256 value = amount;
+        amount = 0;
+        (bool success, ) = seller.call{value: value}("");
+        require(success, "ETH Transfer Failed");
     }
 
     //function refund
     function refund() external {
         require(msg.sender == buyer, "Only buyer can refund");
         require(state == EscrowState.AWAITING_DELIVERY, "Invalid State");
-        require(amount > 0, "No funds to refund");
-
-        uint256 payment = amount;
-        amount = 0;
         state = EscrowState.REFUNDED;
 
-        payable(buyer).transfer(payment);
+        uint256 value = amount;
+        amount = 0;
+
+        (bool success, ) = buyer.call{value : value }("");
+        require(success, "ETH refund failed");
+        
     }
 }
  
